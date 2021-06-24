@@ -1,0 +1,112 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_auc_score
+
+df = pd.read_csv(r'C:\Users\vjcla\Desktop\DataMining\DM_HW3\twitter.csv')
+
+#Problem 2
+def eval_metrics(v_true, v_pred):
+    # Calculate AE
+    AE = np.sum(np.mean((np.subtract(v_true, v_pred))))
+    # Calculate MSE
+    MSE = np.square(np.subtract(v_true, v_pred)).mean()
+    # Calculate RMSE
+    RMSE = np.sqrt(MSE)
+    # Calculate MAE
+    MAE = np.mean(np.abs(np.subtract(v_true, v_pred)))
+    # Calculate MAPE
+    MAPE = np.mean(np.abs((np.subtract(v_true, v_pred)) / v_true)) * 100
+    # Calculate SSE
+    SSE = np.sum(np.square(np.subtract(v_true, v_pred)))
+    return "AE = " + str(AE) + "\nMSE = " + str(MSE) + "\nRMSE = " + str(RMSE) + "\nMAE = " + str(
+        MAE) + "\nMAPE = " + str(MAPE) + "\nSSE = " + str(SSE)
+
+
+print(eval_metrics([1, 1, 2, 2, 4], [0.6, 1.29, 1.99, 2.69, 3.4]))
+
+
+def confusion_matrix(v_true, v_pred):
+    # take unique labels
+    labels = len(np.unique(v_true))
+    #initialize matrix with zeros
+    cm_res = np.zeros((labels, labels)).astype(int)
+    #computing calculation matrix
+    for i in range(len(v_true)):
+        cm_res[v_true[i]][v_pred[i]] += 1
+    return cm_res
+
+
+print("\nConfusion matrix:\n" + str(confusion_matrix([1, 1, 1, 0, 0, 1, 0, 1, 0, 1], [1, 0, 1, 1, 0, 1, 0, 1, 1, 1])))
+print("\n\n")
+
+
+def eval_metrics_bc_calc(v_true, v_pred):
+    accuracy_score = np.sum(np.equal(v_true, v_pred)) / len(v_true)
+    confusion_matrix_val = confusion_matrix(v_true, v_pred)
+    # From Confusion Matrix , get FP
+    FP = confusion_matrix_val[0][1]
+    # From Confusion Matrix , get FN
+    FN = confusion_matrix_val[1][0]
+    # From Confusion Matrix , get TP
+    TP = confusion_matrix_val[1][1]
+    # From Confusion Matrix , get TN
+    TN = confusion_matrix_val[0][0]
+    # Calculate Accuracy
+    Accuracy = (TP + TN) / (TP + FP + FN + TN)
+    # Calculate Sensitivity
+    Sensitivity = TP / (TP + FN)
+    # Calculate Specificity
+    Specificity = TN / (TN + FP)
+    #Calculate Precision
+    Precision = TP / (TP + FP)
+    # Calculate F1_Score
+    F1_Score = (2 * Precision * Sensitivity) / (Precision + Sensitivity)
+    # Calculate MCC
+    MCC = (TP * TN - FP * FN) / np.sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))
+    return FP, FN, TP, TN, Accuracy, Sensitivity, Specificity, Precision, F1_Score, MCC
+
+
+def eval_metrics_bc(v_true, v_pred):
+    # check if they are binary classification
+    label_count = len(np.unique(v_true))
+    if label_count > 2:
+        return "Non-binary classification result detected"
+    # accuracy_score = np.sum(np.equal(v_true, v_pred)) / len(v_true)
+    # return values for the function
+    FP, FN, TP, TN, Accuracy, Sensitivity, Specificity, Precision, F1_Score, MCC = eval_metrics_bc_calc(v_true, v_pred)
+    return "False Positive = " + str(FP) + "\nFalse Negative = " + str(FN) + "\nTrue Positive = " + str(TP) + \
+           "\nTrue Negative = " + str(TN) + \
+           "\nAccuracy = " + str(Accuracy) + "\nSensitivity = " + str(Sensitivity) + "\nSpecificity = " + str(
+        Specificity) + "\nPrecision = " + str(
+        Precision) + "\nF1_Score = " + str(F1_Score) + "\nMCC = " + str(MCC)
+
+
+print(eval_metrics_bc([1, 1, 1, 0, 0, 1, 0, 1, 0, 1], [1, 0, 1, 1, 0, 1, 0, 1, 1, 1]))
+
+
+def roc_bc(dataset):
+    # ROC Curve
+    FPR, TPR, Threshold = roc_curve(dataset["Actual Class"], dataset["Probability of Fake(F) from the Model"],
+                                    pos_label='F')
+    auc_score = roc_auc_score(dataset["Actual Class"], dataset["Probability of Fake(F) from the Model"])
+    roc_auc = auc(FPR, TPR)
+    #Calculate random probality
+    random_probabiity = [0 for i in range(len(dataset["Actual Class"], ))]
+    # Plot AUC and ROC
+    fpr_p, tpr_p, _ = roc_curve(dataset["Actual Class"], random_probabiity, pos_label='F')
+    plt.plot(FPR, TPR, linestyle='--', color='orange',lw=2,label ='ROC curve(area = %0.4f)' % roc_auc)
+    plt.plot(fpr_p, tpr_p, linestyle='--', color='blue')
+    plt.title('ROC curve and AUC Curve')
+    # x label
+    plt.xlabel('False Positive Rate')
+    # y label
+    plt.ylabel('True Positive rate')
+    plt.legend(loc='best')
+    plt.savefig('ROC', dpi=300)
+    plt.show()
+    return
+
+
+roc_bc(df)
